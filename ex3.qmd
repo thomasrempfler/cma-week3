@@ -1,0 +1,68 @@
+---
+title: "ex3"
+format: html
+
+---
+
+## Task 1
+
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+wildschwein <- read_csv("data/wildschwein_BE_2056.csv")
+
+sabi <- wildschwein |> 
+  filter(TierName =="Sabi") |> 
+  filter(DatetimeUTC >= as.POSIXct("2015-07-01", tz = "UTC"), 
+         DatetimeUTC < as.POSIXct("2015-07-03", tz = "UTC"))
+
+ggplot(sabi, aes(E, N, color = DatetimeUTC)) +
+  geom_point() +
+  geom_path() +
+  coord_equal()
+
+sabi |> 
+  head(50) |> 
+  ggplot(aes(DatetimeUTC, 1)) +
+  geom_point()
+
+sabi <- sabi |> 
+  mutate(
+    n_plus1 = sqrt((lead(E) - E)^2 + (lead(N) - N)^2),
+    n_plus2 = sqrt((lead(E, 2) - E)^2 + (lead(N, 2) - N)^2),
+    n_minus1 = sqrt((lag(E) - E)^2 + (lag(N) - N)^2),
+    n_minus2 = sqrt((lag(E, 2) - E)^2 + (lag(N, 2) - N)^2)
+  )
+
+sabi <- sabi |> 
+  rowwise() |> 
+  mutate(
+    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
+  ) |> 
+  ungroup()
+
+
+ggplot(sabi, aes(stepMean)) +
+  geom_histogram(binwidth = 10) +
+  geom_vline(xintercept = mean(sabi$stepMean, na.rm = TRUE))
+
+sabi |> 
+  mutate(static = stepMean < mean(stepMean, na.rm = TRUE)) |> 
+  ggplot(aes(E, N)) +
+  geom_point(aes(color = static)) +
+  geom_path() +
+  coord_fixed()
+
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
