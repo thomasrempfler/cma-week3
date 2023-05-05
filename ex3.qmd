@@ -49,20 +49,17 @@ ggplot(sabi, aes(stepMean)) +
   geom_histogram(binwidth = 10) +
   geom_vline(xintercept = mean(sabi$stepMean, na.rm = TRUE))
 
-sabi |> 
-  mutate(static = stepMean < mean(stepMean, na.rm = TRUE)) |> 
-  ggplot(aes(E, N)) +
-  geom_point(aes(color = static)) +
-  geom_path() +
-  coord_fixed()
+sabi <- sabi |> 
+  mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+
+sabi_filter <- sabi |>
+    filter(!static)
+
+sabi_filter |>
+    ggplot(aes(E, N)) +
+    geom_path() +
+    geom_point() +
+    coord_fixed() +
+    theme(legend.position = "bottom")
 
 ```
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
