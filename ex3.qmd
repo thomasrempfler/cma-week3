@@ -63,3 +63,83 @@ sabi_filter |>
     theme(legend.position = "bottom")
 
 ```
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(lubridate)
+
+rd_orig <- read_csv("data/rd_rid_zhaw2.csv")
+
+rd_wgs84 <- rd_orig |> 
+  filter(ID ==20211) |> 
+  rename(datetime = acquisition_time) |> 
+  select(datetime, longitude, latitude)
+
+rd_lv95 <- rd_wgs84 |> 
+  st_as_sf(coords = c("longitude","latitude"), crs = 4326) |>
+  st_transform(2056)
+
+head(rd_lv95)
+
+rd_coord <- st_coordinates(rd_lv95)
+
+rd_lv95 <- cbind(rd_lv95, rd_coord)
+
+rd <- rd_lv95 |> 
+  filter(month(datetime) == 6)
+
+
+
+
+sabi <- wildschwein |> 
+  filter(TierName =="Sabi") |> 
+  filter(DatetimeUTC >= as.POSIXct("2015-07-01", tz = "UTC"), 
+         DatetimeUTC < as.POSIXct("2015-07-03", tz = "UTC"))
+
+ggplot(sabi, aes(E, N, color = DatetimeUTC)) +
+  geom_point() +
+  geom_path() +
+  coord_equal()
+
+sabi |> 
+  head(50) |> 
+  ggplot(aes(DatetimeUTC, 1)) +
+  geom_point()
+
+sabi <- sabi |> 
+  mutate(
+    n_plus1 = sqrt((lead(E) - E)^2 + (lead(N) - N)^2),
+    n_plus2 = sqrt((lead(E, 2) - E)^2 + (lead(N, 2) - N)^2),
+    n_minus1 = sqrt((lag(E) - E)^2 + (lag(N) - N)^2),
+    n_minus2 = sqrt((lag(E, 2) - E)^2 + (lag(N, 2) - N)^2)
+  )
+
+sabi <- sabi |> 
+  rowwise() |> 
+  mutate(
+    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
+  ) |> 
+  ungroup()
+
+
+ggplot(sabi, aes(stepMean)) +
+  geom_histogram(binwidth = 10) +
+  geom_vline(xintercept = mean(sabi$stepMean, na.rm = TRUE))
+
+sabi <- sabi |> 
+  mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+
+sabi_filter <- sabi |>
+    filter(!static)
+
+sabi_filter |>
+    ggplot(aes(E, N)) +
+    geom_path() +
+    geom_point() +
+    coord_fixed() +
+    theme(legend.position = "bottom")
+
+```
