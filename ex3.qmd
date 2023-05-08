@@ -4,7 +4,7 @@ format: html
 
 ---
 
-## Task 1
+## Tasks and Inputs
 
 
 ```{r}
@@ -64,6 +64,8 @@ sabi_filter |>
 
 ```
 
+## Prepration
+
 ```{r}
 library(readr)
 library(dplyr)
@@ -92,3 +94,4 @@ rd <- rd_lv95 |>
   filter(month(datetime) == 6)
 
 ```
+
