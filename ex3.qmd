@@ -63,7 +63,7 @@ sabi_filter |>
 
 ```
 
-## Prepration
+## Prepration (1 red deer individual, sampling interval = 1h, in May and June)
 
 ```{r}
 library(readr)
@@ -71,6 +71,7 @@ library(dplyr)
 library(ggplot2)
 library(sf)
 library(lubridate)
+library(mapview)
 
 rm(list=ls())
 
@@ -99,7 +100,7 @@ rd <- rd_lv95 |>
 ## Task 1
 
 ```{r}
-ggplot(rd, aes(X, Y, color = datetime)) +
+ggplot(rd, aes(X, Y, colour = datetime)) +
   geom_point() +
   geom_path() +
   coord_equal()
@@ -127,7 +128,8 @@ rd <- rd |>
   mutate(
     stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
   ) |> 
-  ungroup()
+  ungroup() |> 
+  mutate(doy = as.factor(yday(datetime)))
 
 ggplot(rd, aes(stepMean)) +
   geom_histogram(binwidth = 10) +
@@ -141,47 +143,22 @@ summary(rd$stepMean)
 rd <- rd |> 
   mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
 
-rd_filter <- rd |>
-    filter(!static)
-
-rd_filter |>
-    ggplot(aes(X, Y)) +
-    geom_path() +
-    geom_point() +
-    coord_fixed() +
-    theme(legend.position = "bottom")
+summary(rd$static)
 
 ```
 
 ## Task 3
 
 ```{r}
-rd <- rd |> 
-  rowwise() |> 
-  mutate(
-    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
-  ) |> 
-  ungroup()
 
-ggplot(rd, aes(stepMean)) +
-  geom_histogram(binwidth = 10) +
-  geom_vline(xintercept = mean(rd$stepMean, na.rm = TRUE))
+rd_complete <- rd |> 
+  filter(!is.na(static))
 
-ggplot(rd, aes(stepMean)) +
-  geom_boxplot()
+summary(rd_complete)
 
-summary(rd$stepMean)
-
-rd <- rd |> 
-  mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
-
-rd_filter <- rd |>
-    filter(!static)
-
-rd_filter |>
-    ggplot(aes(X, Y)) +
+rd_complete |> ggplot(aes(X, Y)) +
     geom_path() +
-    geom_point() +
+    geom_point(aes( colour = static)) +
     coord_fixed() +
     theme(legend.position = "bottom")
 
