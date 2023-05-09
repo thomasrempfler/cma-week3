@@ -72,6 +72,8 @@ library(ggplot2)
 library(sf)
 library(lubridate)
 library(mapview)
+library(forcats)
+
 
 rm(list=ls())
 
@@ -128,8 +130,7 @@ rd <- rd |>
   mutate(
     stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
   ) |> 
-  ungroup() |> 
-  mutate(doy = as.factor(yday(datetime)))
+  ungroup()
 
 ggplot(rd, aes(stepMean)) +
   geom_histogram(binwidth = 10) +
@@ -163,4 +164,41 @@ rd_complete |> ggplot(aes(X, Y)) +
     theme(legend.position = "bottom")
 
 ```
+
+## Task 4
+
+```{r}
+
+rle_id <- function(vec) {
+    x <- rle(vec)$lengths
+    as.factor(rep(seq_along(x), times = x))
+}
+
+rd_seg <- rd_complete |>
+    mutate(segment_id = rle_id(static))
+
+head(rd_seg)
+
+rd_seg <- rd_seg |> 
+  group_by(segment_id) |> 
+  mutate(duration = (difftime(max(datetime), min(datetime), units = "hours")))
+summary(rd_seg$duration)
+
+rd_3plus <- rd_seg |> 
+  filter(static == FALSE, duration >= 3) |> 
+  mutate(dura_class = as.factor(case_when(duration < 3 ~ 3,
+                                duration >= 3 & duration < 6  ~ 6,
+                                duration >= 6 & duration < 9  ~ 9,
+                                duration >= 9 & duration < 12  ~ 12,
+                                duration >= 12 & duration < 15  ~ 15))) |> 
+  mutate(dura_class = fct_relevel(dura_class, c("3", "6", "9", "12", "15")))
+
+rd_3plus |> ggplot(aes(X, Y)) +
+    geom_path() +
+    geom_point(aes( colour = dura_class)) +
+    coord_fixed() +
+    theme(legend.position = "bottom")
+
+```
+
 
