@@ -6,7 +6,6 @@ format: html
 
 ## Tasks and Inputs
 
-
 ```{r}
 library(readr)
 library(dplyr)
@@ -31,10 +30,10 @@ sabi |>
 
 sabi <- sabi |> 
   mutate(
-    n_plus1 = sqrt((lead(E) - E)^2 + (lead(N) - N)^2),
-    n_plus2 = sqrt((lead(E, 2) - E)^2 + (lead(N, 2) - N)^2),
-    n_minus1 = sqrt((lag(E) - E)^2 + (lag(N) - N)^2),
-    n_minus2 = sqrt((lag(E, 2) - E)^2 + (lag(N, 2) - N)^2)
+    n_plus1 = sqrt((lead(X) - X)^2 + (lead(Y) - N)^2),
+    n_plus2 = sqrt((lead(X, 2) - X)^2 + (lead(Y, 2) - N)^2),
+    n_minus1 = sqrt((lag(X) - X)^2 + (lag(Y) - N)^2),
+    n_minus2 = sqrt((lag(X, 2) - X)^2 + (lag(Y, 2) - N)^2)
   )
 
 sabi <- sabi |> 
@@ -91,7 +90,54 @@ rd_coord <- st_coordinates(rd_lv95)
 rd_lv95 <- cbind(rd_lv95, rd_coord)
 
 rd <- rd_lv95 |> 
-  filter(month(datetime) == 6)
+  filter(month(datetime) %in% c(5, 6))
 
 ```
 
+## Task 1
+
+```{r}
+ggplot(rd, aes(X, Y, color = datetime)) +
+  geom_point() +
+  geom_path() +
+  coord_equal()
+
+rd |> 
+  head(50) |> 
+  ggplot(aes(datetime, 1)) +
+  geom_point()
+
+rd <- rd |> 
+  mutate(
+    n_plus1 = sqrt((lead(X) - X)^2 + (lead(Y) - Y)^2),
+    n_plus2 = sqrt((lead(X, 2) - X)^2 + (lead(Y, 2) - Y)^2),
+    n_minus1 = sqrt((lag(X) - X)^2 + (lag(Y) - Y)^2),
+    n_minus2 = sqrt((lag(X, 2) - X)^2 + (lag(Y, 2) - Y)^2)
+  )
+
+rd <- rd |> 
+  rowwise() |> 
+  mutate(
+    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
+  ) |> 
+  ungroup()
+
+
+ggplot(rd, aes(stepMean)) +
+  geom_histogram(binwidth = 10) +
+  geom_vline(xintercept = mean(rd$stepMean, na.rm = TRUE))
+
+rd <- rd |> 
+  mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+
+rd_filter <- rd |>
+    filter(!static)
+
+rd_filter |>
+    ggplot(aes(X, Y)) +
+    geom_path() +
+    geom_point() +
+    coord_fixed() +
+    theme(legend.position = "bottom")
+
+```
