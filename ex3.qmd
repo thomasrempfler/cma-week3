@@ -72,6 +72,8 @@ library(ggplot2)
 library(sf)
 library(lubridate)
 
+rm(list=ls())
+
 rd_orig <- read_csv("data/rd_rid_zhaw2.csv")
 
 rd_wgs84 <- rd_orig |> 
@@ -115,6 +117,11 @@ rd <- rd |>
     n_minus2 = sqrt((lag(X, 2) - X)^2 + (lag(Y, 2) - Y)^2)
   )
 
+```
+
+## Task 2
+
+```{r}
 rd <- rd |> 
   rowwise() |> 
   mutate(
@@ -122,10 +129,14 @@ rd <- rd |>
   ) |> 
   ungroup()
 
-
 ggplot(rd, aes(stepMean)) +
   geom_histogram(binwidth = 10) +
   geom_vline(xintercept = mean(rd$stepMean, na.rm = TRUE))
+
+ggplot(rd, aes(stepMean)) +
+  geom_boxplot()
+
+summary(rd$stepMean)
 
 rd <- rd |> 
   mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
@@ -141,3 +152,38 @@ rd_filter |>
     theme(legend.position = "bottom")
 
 ```
+
+## Task 3
+
+```{r}
+rd <- rd |> 
+  rowwise() |> 
+  mutate(
+    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
+  ) |> 
+  ungroup()
+
+ggplot(rd, aes(stepMean)) +
+  geom_histogram(binwidth = 10) +
+  geom_vline(xintercept = mean(rd$stepMean, na.rm = TRUE))
+
+ggplot(rd, aes(stepMean)) +
+  geom_boxplot()
+
+summary(rd$stepMean)
+
+rd <- rd |> 
+  mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+
+rd_filter <- rd |>
+    filter(!static)
+
+rd_filter |>
+    ggplot(aes(X, Y)) +
+    geom_path() +
+    geom_point() +
+    coord_fixed() +
+    theme(legend.position = "bottom")
+
+```
+
