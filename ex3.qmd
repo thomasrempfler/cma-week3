@@ -201,4 +201,22 @@ rd_3plus |> ggplot(aes(X, Y)) +
 
 ```
 
+## Task 5
 
+```{r}
+
+ped <- read_csv("data/pedestrian.csv") |> 
+  mutate(TrajID = as.factor(TrajID))
+
+ped |> ggplot(aes(E, N, colour = TrajID)) +
+    geom_path() +
+    geom_point() +
+    coord_fixed() +
+    ggtitle("Visual Comparison of the 6 Trajectories",
+            subtitle = "Each subplot highlights a trajectory") +
+    theme(axis.text = element_blank(),
+          axis.ticks = element_blank()) +
+    facet_wrap(~TrajID) +
+    theme(legend.position = "none")
+
+```
