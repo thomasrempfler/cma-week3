@@ -71,8 +71,9 @@ library(dplyr)
 library(ggplot2)
 library(sf)
 library(lubridate)
-library(mapview)
+# library(mapview)
 library(forcats)
+library(SimilarityMeasures)
 
 
 rm(list=ls())
@@ -220,3 +221,97 @@ ped |> ggplot(aes(E, N, colour = TrajID)) +
     theme(legend.position = "none")
 
 ```
+
+## Task 6
+
+```{r}
+
+rm(list=ls())
+
+# help(package = "SimilarityMeasures")
+
+ped <- read_csv("data/pedestrian.csv")
+
+
+# create output tables
+output_DTW <- data.frame(value = numeric(),
+                         measure = character())
+output_EditDist <- data.frame(value = numeric(),
+                         measure = character())
+output_Frechet <- data.frame(value = numeric(),
+                         measure = character())
+# output_LCSS <- data.frame(value = numeric(),
+#                          measure = character())
+
+
+# loop through every trajectory
+for(t in 1:6){
+
+      names(ped)
+      
+      t1 <- ped %>%
+        dplyr::filter(TrajID == 1) |> 
+          data.matrix()
+
+      tx <- ped %>%
+        dplyr::filter(TrajID == t & TrajID > 1)|> 
+          data.matrix()
+      
+      # DTW
+      DTW <- DTW(t1, tx, -1) 
+      output_DTW <- rbind(output_DTW, DTW)
+      colnames(output_DTW) <- "value"
+
+      # Edit Distance
+      EditDist <- EditDist(t1, tx, 20) 
+      output_EditDist <- rbind(output_EditDist, EditDist)
+      colnames(output_EditDist) <- "value"
+
+      # Frechet
+      Frechet <- Frechet(t1, tx, -1)
+      output_Frechet <- rbind(output_Frechet, Frechet)
+      colnames(output_Frechet) <- "value"
+
+      # # LCSS
+      # LCSS <- LCSS(t1, tx, pointSpacing = -1, pointDistance = 20,
+      #              errorMarg = 2, returnTrans = FALSE)
+      # output_LCSS <- rbind(output_LCSS, LCSS)
+      # colnames(output_LCSS) <- "value"
+}
+
+output_DTW <- output_DTW  |> 
+  slice(2:6) |> 
+  mutate(value = as.numeric(value),
+         measure = "DTW", TrajID = row_number() + 1)
+
+output_EditDist <- output_EditDist |> 
+  slice(2:6) |> 
+  mutate(value = as.numeric(value),
+         measure = "EditDist", TrajID = row_number() + 1)
+
+output_Frechet <- output_Frechet |> 
+  slice(2:6) |> 
+  mutate(value = as.numeric(value),
+         measure = "Frechet", TrajID = row_number() + 1)
+
+# output_LCSS <- output_LCSS |> 
+#   slice(2:6) |> 
+#   mutate(value = as.numeric(value),
+#          measure = "LCSS", TrajID = row_number() + 1)
+
+
+output <- output_DTW |> 
+  bind_rows(output_EditDist, output_Frechet, 
+            # output_LCSS
+            ) |> 
+  mutate(measure = as.factor(measure),
+         TrajID = as.factor(TrajID))
+
+output |> ggplot(aes(TrajID, value, fill = TrajID)) +
+    geom_bar(stat = "identity") +
+    labs(title = "Computed similarities using diffent measures\nbetween trajectory 1 to all other trajectories") +
+    facet_wrap(~measure, scales = "free") +
+    theme(legend.position = "none")
+
+```
+
